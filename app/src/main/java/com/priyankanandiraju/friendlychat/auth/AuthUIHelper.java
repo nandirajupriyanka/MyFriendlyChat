@@ -19,8 +19,8 @@ public final class AuthUIHelper {
                 new AuthUI.IdpConfig.EmailBuilder().build(),
                 new AuthUI.IdpConfig.PhoneBuilder().build(),
                 new AuthUI.IdpConfig.GoogleBuilder().build(),
-                new AuthUI.IdpConfig.FacebookBuilder().build()
-                /*new AuthUI.IdpConfig.TwitterBuilder().build()*/);
+                new AuthUI.IdpConfig.FacebookBuilder().build(),
+                new AuthUI.IdpConfig.TwitterBuilder().build());
     }
 
     public static Intent getSignInIntent() {
