@@ -3,6 +3,10 @@
     <string name="signed_in">Signed In</string>
     <string name="sign_in_cancelled">Sign In Cancelled</string>
     <string name="sign_out">Sign Out</string>
+    <string name="capture_image">Capture Image</string>
+    <string name="record_video">Record Video</string>
+    <string name="failed_to_capture_image">Failed to Capture Image</string>
+    <string name="failed_to_record_video">Failed to record Video</string>
 
     <!-- facebook auth -->
     <string name="facebook_application_id" translatable="false">APP_KEY</string>
