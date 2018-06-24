@@ -3,4 +3,8 @@
     <string name="signed_in">Signed In</string>
     <string name="sign_in_cancelled">Sign In Cancelled</string>
     <string name="sign_out">Sign Out</string>
+
+    <string name="facebook_application_id" translatable="false">APP_KEY</string>
+    <!-- Facebook Application ID, prefixed by 'fb'. Enables Chrome Custom tabs. -->
+    <string name="facebook_login_protocol_scheme" translatable="false">fbAPP_KEY</string>
 </resources>
