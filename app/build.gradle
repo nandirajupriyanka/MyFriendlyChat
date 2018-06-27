@@ -30,6 +30,8 @@ dependencies {
     implementation 'com.facebook.android:facebook-login:4.32.0'
     // Required only if Twitter login support is required
     implementation("com.twitter.sdk.android:twitter-core:3.1.1")
+    // For firebase Storage
+    implementation 'com.google.firebase:firebase-storage:16.0.1'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'

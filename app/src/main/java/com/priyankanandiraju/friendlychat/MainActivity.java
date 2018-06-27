@@ -1,6 +1,7 @@
 package com.priyankanandiraju.friendlychat;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -17,8 +18,13 @@ import android.widget.ImageView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.priyankanandiraju.friendlychat.auth.AuthUIHelper;
 import com.priyankanandiraju.friendlychat.utils.BitmapUtils;
 
@@ -36,11 +42,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int REQUEST_IMAGE_CAPTURE = 2000;
     private static final int REQUEST_VIDEO_CAPTURE = 2001;
     private static final int VIDEO_RECORD_DURATION_LIMIT = 15000; //15sec
+    public static final String CHAT_PHOTOS = "chat_photos";
     private ImageView imageView;
     private VideoView videoView;
+    // Authentication
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthListener;
-    private String mTempPhotoPath;
+    // Storage
+    private FirebaseStorage mFirebaseStorage;
+    private StorageReference mPhotoStorageReference;
+    private File mTempPhotoFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +59,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         mFirebaseAuth = FirebaseAuth.getInstance();
+        mFirebaseStorage = FirebaseStorage.getInstance();
+        mPhotoStorageReference = mFirebaseStorage.getReference().child(CHAT_PHOTOS);
 
         Button captureImage = findViewById(R.id.capture_image);
         captureImage.setOnClickListener(this);
@@ -101,8 +114,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (photoFile != null) {
 
                 // Get the path of the temporary file
-                mTempPhotoPath = photoFile.getAbsolutePath();
-                Log.v(TAG, "mTempPhotoPath " + mTempPhotoPath);
+                mTempPhotoFile = photoFile;
+                Log.v(TAG, "mTempPhotoPath " + mTempPhotoFile.getAbsolutePath());
                 // Get the content URI for the image file
                 Uri photoURI = FileProvider.getUriForFile(this,
                         FILE_PROVIDER_AUTHORITY,
@@ -131,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         } else if (requestCode == REQUEST_IMAGE_CAPTURE) {
             if (resultCode == RESULT_OK) {
-                setCapturedImage();
+                setAndStoreCapturedImage();
             } else if (resultCode == RESULT_CANCELED) {
                 Toast.makeText(MainActivity.this, R.string.failed_to_capture_image, Toast.LENGTH_SHORT).show();
             }
@@ -144,8 +157,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void setCapturedImage() {
-        imageView.setImageBitmap(createBitmap(mTempPhotoPath));
+    private void setAndStoreCapturedImage() {
+        Bitmap bitmap = createBitmap(mTempPhotoFile.getAbsolutePath());
+        imageView.setImageBitmap(bitmap);
+
+        Uri uri = Uri.fromFile(mTempPhotoFile);
+        // Get a reference to store file at CHAT_PHOTOS/<FILENAME>
+        StorageReference photoRef = mPhotoStorageReference.child(uri.getLastPathSegment());
+        // Upload a file to Firebase Storage
+        photoRef.putFile(uri)
+                .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                        Log.v(TAG, "Successfully uploaded image to Firebase Storage");
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "Failed to upload image to Firebase Storage");
+                    }
+                });
     }
 
     private void setRecordedVideo(Uri videoUri) {
