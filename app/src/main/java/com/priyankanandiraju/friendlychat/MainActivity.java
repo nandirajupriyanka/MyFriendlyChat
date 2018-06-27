@@ -1,12 +1,12 @@
 package com.priyankanandiraju.friendlychat;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -20,9 +20,17 @@ import android.widget.VideoView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.priyankanandiraju.friendlychat.auth.AuthUIHelper;
+import com.priyankanandiraju.friendlychat.utils.BitmapUtils;
+
+import java.io.File;
+import java.io.IOException;
+
+import static com.priyankanandiraju.friendlychat.utils.BitmapUtils.createBitmap;
+
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
+    public static final String FILE_PROVIDER_AUTHORITY = "com.example.android.fileprovider";
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final int RC_SIGN_IN = 1000;
     private static final int REQUEST_IMAGE_CAPTURE = 2000;
@@ -32,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private VideoView videoView;
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthListener;
+    private String mTempPhotoPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,9 +84,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void dispatchCaptureImageIntent() {
         Log.v(TAG, "dispatchCaptureImageIntent()");
-        Intent captureImageIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (captureImageIntent.resolveActivity(getPackageManager()) != null) {
-            startActivityForResult(captureImageIntent, REQUEST_IMAGE_CAPTURE);
+        // Create the capture image intent
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+        // Ensure that there's a camera activity to handle the intent
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            // Create the temporary File where the photo should go
+            File photoFile = null;
+            try {
+                photoFile = BitmapUtils.createTempImageFile(this);
+            } catch (IOException ex) {
+                // Error occurred while creating the File
+                ex.printStackTrace();
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+
+                // Get the path of the temporary file
+                mTempPhotoPath = photoFile.getAbsolutePath();
+                Log.v(TAG, "mTempPhotoPath " + mTempPhotoPath);
+                // Get the content URI for the image file
+                Uri photoURI = FileProvider.getUriForFile(this,
+                        FILE_PROVIDER_AUTHORITY,
+                        photoFile);
+
+                // Add the URI so the camera can store the image
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+
+                // Launch the camera activity
+                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+            } else {
+                Log.w(TAG, "Temporary photo file is null");
+            }
         }
     }
 
@@ -93,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         } else if (requestCode == REQUEST_IMAGE_CAPTURE) {
             if (resultCode == RESULT_OK) {
-                setCapturedImage(intent.getExtras());
+                setCapturedImage();
             } else if (resultCode == RESULT_CANCELED) {
                 Toast.makeText(MainActivity.this, R.string.failed_to_capture_image, Toast.LENGTH_SHORT).show();
             }
@@ -106,17 +144,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    private void setCapturedImage() {
+        imageView.setImageBitmap(createBitmap(mTempPhotoPath));
+    }
+
     private void setRecordedVideo(Uri videoUri) {
         videoView.setVideoURI(videoUri);
         videoView.start();
-    }
-
-    private void setCapturedImage(Bundle extras) {
-        Bitmap imageBitmap = null;
-        if (extras != null) {
-            imageBitmap = (Bitmap) extras.get("data");
-        }
-        imageView.setImageBitmap(imageBitmap);
     }
 
     @Override
