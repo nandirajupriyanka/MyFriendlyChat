@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int REQUEST_VIDEO_CAPTURE = 2001;
     private static final int VIDEO_RECORD_DURATION_LIMIT = 15000; //15sec
     public static final String CHAT_PHOTOS = "chat_photos";
+    public static final String CHAT_VIDEOS = "chat_videos";
     private ImageView imageView;
     private VideoView videoView;
     // Authentication
@@ -52,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mPhotoStorageReference;
     private File mTempPhotoFile;
+    private StorageReference mVideoStorageReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
         mPhotoStorageReference = mFirebaseStorage.getReference().child(CHAT_PHOTOS);
+        mVideoStorageReference = mFirebaseStorage.getReference().child(CHAT_VIDEOS);
 
         Button captureImage = findViewById(R.id.capture_image);
         captureImage.setOnClickListener(this);
@@ -150,7 +153,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         } else if (requestCode == REQUEST_VIDEO_CAPTURE) {
             if (resultCode == RESULT_OK) {
-                setRecordedVideo(intent.getData());
+                setAndStoreRecordedVideo(intent.getData());
             } else if (resultCode == RESULT_CANCELED) {
                 Toast.makeText(MainActivity.this, R.string.failed_to_record_video, Toast.LENGTH_SHORT).show();
             }
@@ -180,9 +183,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
     }
 
-    private void setRecordedVideo(Uri videoUri) {
+    private void setAndStoreRecordedVideo(Uri videoUri) {
         videoView.setVideoURI(videoUri);
         videoView.start();
+        Log.v(TAG, "videoUri " + videoUri);
+        // Get a reference to store file at CHAT_VIDEOS/<FILENAME>
+        StorageReference videoRef = mVideoStorageReference.child(videoUri.getLastPathSegment());
+        // Upload a file to Firebase Storage
+        videoRef.putFile(videoUri)
+                .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                        Log.v(TAG, "Successfully uploaded video to Firebase Storage");
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "Failed to upload video to Firebase Storage");
+                    }
+                });
     }
 
     @Override
