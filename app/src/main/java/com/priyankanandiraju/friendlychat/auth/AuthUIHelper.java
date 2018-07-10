@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 
 import com.firebase.ui.auth.AuthUI;
+import com.priyankanandiraju.friendlychat.R;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,6 +29,7 @@ public final class AuthUIHelper {
                 .createSignInIntentBuilder()
                 .setIsSmartLockEnabled(false)
                 .setAvailableProviders(getAuthProviders())
+                .setTheme(R.style.LoginTheme)
                 .build();
     }
 
