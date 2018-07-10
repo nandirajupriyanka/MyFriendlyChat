@@ -20,8 +20,6 @@ import android.widget.VideoView;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -38,7 +36,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public static final String FILE_PROVIDER_AUTHORITY = "com.example.android.fileprovider";
     private static final String TAG = MainActivity.class.getSimpleName();
-    private static final int RC_SIGN_IN = 1000;
     private static final int REQUEST_IMAGE_CAPTURE = 2000;
     private static final int REQUEST_VIDEO_CAPTURE = 2001;
     private static final int VIDEO_RECORD_DURATION_LIMIT = 15000; //15sec
@@ -46,9 +43,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public static final String CHAT_VIDEOS = "chat_videos";
     private ImageView imageView;
     private VideoView videoView;
-    // Authentication
-    private FirebaseAuth mFirebaseAuth;
-    private FirebaseAuth.AuthStateListener mAuthListener;
     // Storage
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mPhotoStorageReference;
@@ -60,7 +54,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
         mPhotoStorageReference = mFirebaseStorage.getReference().child(CHAT_PHOTOS);
         mVideoStorageReference = mFirebaseStorage.getReference().child(CHAT_VIDEOS);
@@ -73,19 +66,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         imageView = findViewById(R.id.imageView);
         videoView = findViewById(R.id.videoView);
-
-        mAuthListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                FirebaseUser currentUser = firebaseAuth.getCurrentUser();
-                if (currentUser != null) {
-                    // user is signed in
-                    Toast.makeText(MainActivity.this, R.string.signed_in, Toast.LENGTH_SHORT).show();
-                } else {
-                    startActivityForResult(AuthUIHelper.getSignInIntent(), RC_SIGN_IN);
-                }
-            }
-        };
     }
 
     private void dispatchRecordVideoIntent() {
@@ -138,14 +118,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-        if (requestCode == RC_SIGN_IN) {
-            if (resultCode == RESULT_OK) {
-                Toast.makeText(MainActivity.this, R.string.signed_in, Toast.LENGTH_SHORT).show();
-            } else if (resultCode == RESULT_CANCELED) {
-                Toast.makeText(MainActivity.this, R.string.sign_in_cancelled, Toast.LENGTH_SHORT).show();
-                finish();
-            }
-        } else if (requestCode == REQUEST_IMAGE_CAPTURE) {
+        if (requestCode == REQUEST_IMAGE_CAPTURE) {
             if (resultCode == RESULT_OK) {
                 setAndStoreCapturedImage();
             } else if (resultCode == RESULT_CANCELED) {
@@ -208,15 +181,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onResume() {
         super.onResume();
-        mFirebaseAuth.addAuthStateListener(mAuthListener);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (mAuthListener != null) {
-            mFirebaseAuth.removeAuthStateListener(mAuthListener);
-        }
     }
 
     @Override
@@ -231,6 +200,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (item.getItemId()) {
             case R.id.sign_out_menu:
                 AuthUIHelper.performSignOut(this);
+                finish();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
